@@ -1,0 +1,27 @@
+[
+  {
+    "id": "user_1765599854691",
+    "name": "Zorta helpline",
+    "email": "zortahelpline@gmail.com",
+    "image": "https://lh3.googleusercontent.com/a/ACg8ocIVcYZPYGX-YP0d6-oUVftow2kHaoPZjUhDtZhmxxZkpDvf4A=s96-c",
+    "authProvider": "google",
+    "createdAt": "2025-12-13T04:24:14.691Z"
+  },
+  {
+    "id": "user_1765629127347",
+    "name": "Lucky only",
+    "email": "theuniversallord243@gmail.com",
+    "image": "https://lh3.googleusercontent.com/a/ACg8ocJSXpSYbNbd_AP2wsV_yrSPCBO4juTUheltasbjwUAzJmhXjzT1=s96-c",
+    "authProvider": "google",
+    "createdAt": "2025-12-13T12:32:07.347Z",
+    "password": "@lucky8860"
+  },
+  {
+    "id": "user_1765629296268",
+    "name": "hub Diy magic",
+    "email": "hubdiymagic@gmail.com",
+    "image": "https://lh3.googleusercontent.com/a/ACg8ocId2ej4iw8GmTiDhR3PQTY71UlOP1BfWI7Q302Y7eezln8i_w=s96-c",
+    "authProvider": "google",
+    "createdAt": "2025-12-13T12:34:56.268Z"
+  }
+]

@@ -1,0 +1,45 @@
+[
+  {
+    "ownerName": "Master Admin",
+    "contact": "9999999999",
+    "email": "zortahelpline@gmail.com",
+    "password": "@lucky8860",
+    "shopName": "Zorta HQ",
+    "address": "Admin Office",
+    "type": "Admin",
+    "delivery": false,
+    "openTime": "00:00",
+    "closeTime": "23:59",
+    "id": "outlet_master_admin",
+    "createdAt": "2025-12-15T00:00:00.000Z"
+  },
+  {
+    "ownerName": "pappu halwai ",
+    "contact": "9654991814",
+    "email": "theuniversallord243@gmail.com",
+    "password": "@lucky8860",
+    "shopName": "pappu sweet",
+    "address": "mathura road aligarh - 202001",
+    "type": "Store",
+    "delivery": true,
+    "openTime": "10:00",
+    "closeTime": "23:00",
+    "id": "outlet_1765536237409",
+    "createdAt": "2025-12-12T10:43:57.409Z",
+    "upiId": "so77@xl"
+  },
+  {
+    "ownerName": "pappu halwai ",
+    "contact": "9654991814",
+    "email": "helloworldlucky38@gmail.com",
+    "password": "@lucky8860",
+    "shopName": "pappu halwai ",
+    "address": "test area maha ganj aligarh uttar pradesh.",
+    "type": "Restaurant",
+    "delivery": false,
+    "openTime": "10:00",
+    "closeTime": "23:00",
+    "id": "outlet_1765536729410",
+    "createdAt": "2025-12-12T10:52:09.410Z"
+  }
+]

@@ -1,0 +1,89 @@
+.logoBadge {
+    width: 64px;
+    height: 64px;
+    background: var(--primary);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+}
+
+.tagline {
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+
+.roleCard {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    padding: 1.25rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    gap: 1rem;
+}
+
+.roleCard:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent);
+}
+
+.iconCircle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #16a34a;
+    /* Emerald 600 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cardTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.cardDesc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.arrow {
+    margin-left: auto;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.roleCard:hover .arrow {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.guestLink {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.guestLink:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
