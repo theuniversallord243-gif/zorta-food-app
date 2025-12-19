@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { connectDB } from '@/lib/mongodb';
 import { OTP } from '@/lib/models';
 import { generateOTP } from '@/lib/crypto';
@@ -29,42 +28,15 @@ export async function POST(request) {
             { upsert: true }
         );
 
-        // Check if email is configured
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-            console.log('[DEV MODE] OTP:', otp);
-            return NextResponse.json({ 
-                success: true, 
-                message: 'OTP generated (email not configured)', 
-                otp: otp
-            });
-        }
-
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD
-            },
-            connectionTimeout: 10000
+        console.log('OTP Generated:', otp, 'for', body.email);
+        
+        return NextResponse.json({ 
+            success: true, 
+            message: 'OTP generated successfully', 
+            otp: otp
         });
-
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: body.email,
-            subject: 'Your Zorta Password Reset OTP',
-            html: `
-                <h2>Password Reset Request</h2>
-                <p>Your OTP is: <strong>${otp}</strong></p>
-                <p>This OTP will expire in ${process.env.OTP_EXPIRY_MINUTES || 10} minutes.</p>
-                <p>If you didn't request this, please ignore this email.</p>
-            `
-        });
-
-        return NextResponse.json({ success: true, message: 'OTP sent to email' });
     } catch (error) {
-        console.error('OTP send error:', error);
-        return NextResponse.json({ error: 'Failed to send OTP' }, { status: 500 });
+        console.error('OTP generation error:', error);
+        return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 });
     }
 }
