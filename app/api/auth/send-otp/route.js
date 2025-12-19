@@ -35,16 +35,19 @@ export async function POST(request) {
             return NextResponse.json({ 
                 success: true, 
                 message: 'OTP generated (email not configured)', 
-                otp: otp // Only for development
+                otp: otp
             });
         }
 
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASSWORD
-            }
+            },
+            connectionTimeout: 10000
         });
 
         await transporter.sendMail({
