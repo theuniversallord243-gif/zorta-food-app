@@ -40,25 +40,24 @@ export async function POST(request) {
     try {
         await connectDB();
         const body = await request.json();
-        const validation = validateInput(body, orderSchema);
 
-        if (!validation.valid) {
-            return NextResponse.json({ errors: validation.errors }, { status: 400 });
+        if (!body.items || !body.outletId) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const newOrder = new Order({
-            userId: body.userId,
+            userId: body.userId || null,
             outletId: body.outletId,
             items: body.items,
-            totalAmount: body.totalAmount,
-            deliveryAddress: body.deliveryAddress,
+            totalAmount: body.total || body.totalAmount,
+            deliveryAddress: body.details?.address || body.deliveryAddress || '',
             status: 'Pending',
-            paymentStatus: 'Pending',
+            paymentStatus: body.paymentStatus || 'Pending',
             statusHistory: [{ status: 'Pending', timestamp: new Date() }]
         });
 
         await newOrder.save();
-        return NextResponse.json(newOrder, { status: 201 });
+        return NextResponse.json({ id: newOrder._id, ...newOrder.toObject() }, { status: 201 });
     } catch (error) {
         console.error('Order creation error:', error);
         return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
