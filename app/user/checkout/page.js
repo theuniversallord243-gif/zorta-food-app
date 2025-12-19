@@ -8,13 +8,12 @@ export default function Checkout() {
     const router = useRouter();
     const [cart, setCart] = useState(null);
     const [outlet, setOutlet] = useState(null);
-    const [mode, setMode] = useState('Dine-in'); // Dine-in, Delivery, Takeaway
-    const [paymentMethod, setPaymentMethod] = useState('cash'); // cash, upi
+    const [mode, setMode] = useState('Dine-in');
+    const [paymentMethod, setPaymentMethod] = useState('cash');
     const [loading, setLoading] = useState(false);
     const [locating, setLocating] = useState(false);
     const [showQrModal, setShowQrModal] = useState(false);
 
-    // Delivery Form
     const [details, setDetails] = useState({
         tableNo: '',
         address: '',
@@ -28,25 +27,21 @@ export default function Checkout() {
             const cartData = JSON.parse(stored);
             setCart(cartData);
 
-            // Fetch outlet and Menu for validation
             fetch(`/api/outlets`)
                 .then(res => res.json())
                 .then(outlets => {
                     const outletData = outlets.find(o => o.id === cartData.outletId);
                     setOutlet(outletData);
 
-                    // If delivery not available, set default to Dine-in
                     if (!outletData?.delivery && mode === 'Delivery') {
                         setMode('Dine-in');
                     }
                 })
                 .catch(err => console.error('Failed to fetch outlet', err));
 
-            // Validate Items against Menu
             fetch(`/api/menu?outletId=${cartData.outletId}`)
                 .then(res => res.json())
                 .then(menuItems => {
-                    // Check if all cart items exist in current menu and are active
                     const validItems = cartData.items.filter(cartItem =>
                         menuItems.some(menuItem => menuItem.id === cartItem.id)
                     );
@@ -57,7 +52,6 @@ export default function Checkout() {
                         router.push(`/user/outlet/${cartData.outletId}`);
                     } else if (validItems.length < cartData.items.length) {
                         alert("Some items in your cart are no longer available and were removed.");
-                        // Update cart with only valid items
                         const newTotal = validItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
                         const newCart = { ...cartData, items: validItems, total: newTotal };
                         setCart(newCart);
@@ -67,7 +61,7 @@ export default function Checkout() {
                 .catch(err => console.error('Failed to validate menu', err));
 
         } else {
-            router.push('/user'); // No cart? Go home
+            router.push('/user');
         }
     }, [router]);
 
@@ -84,7 +78,6 @@ export default function Checkout() {
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 try {
-                    // Nominatim requires User-Agent
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
                         headers: {
                             'User-Agent': 'ZortaFoodApp/1.0',
@@ -120,25 +113,21 @@ export default function Checkout() {
     };
 
     const handlePlaceOrder = async () => {
-        // Validation: Address is mandatory for Delivery
         if (mode === 'Delivery' && !details.address?.trim()) {
             alert("Please enter your Delivery Address");
             return;
         }
 
-        // Phone is mandatory
         if (!details.phone?.trim()) {
             alert("Please enter your phone number");
             return;
         }
 
         if (paymentMethod === 'upi') {
-            // Show UPI Modal
             setShowQrModal(true);
             return;
         }
 
-        // Cash Payment
         placeOrderDirect();
     };
 
@@ -162,11 +151,27 @@ export default function Checkout() {
                 body: JSON.stringify(orderData)
             });
 
+            if (!res.ok) {
+                const error = await res.json();
+                alert(`Failed to place order: ${error.error || 'Unknown error'}`);
+                setLoading(false);
+                return;
+            }
+
             const newOrder = await res.json();
+            
+            if (!newOrder.id && !newOrder._id) {
+                alert("Order created but ID missing. Please refresh.");
+                setLoading(false);
+                return;
+            }
+
             localStorage.removeItem('user_cart');
-            router.push(`/user/track/${newOrder.id}`);
+            const orderId = newOrder.id || newOrder._id;
+            router.push(`/user/track/${orderId}`);
         } catch (err) {
-            alert("Failed to place order");
+            console.error("Order error:", err);
+            alert("Failed to place order. Please try again.");
             setLoading(false);
         }
     };
@@ -174,13 +179,11 @@ export default function Checkout() {
     return (
         <main className="container flex-col p-4 fade-in" style={{ paddingBottom: '120px' }}>
 
-            {/* Header */}
             <div className="flex-center" style={{ justifyContent: 'flex-start', marginBottom: '1.5rem', gap: '1rem' }}>
                 <Link href={`/user/outlet/${cart.outletId}`} style={{ color: 'var(--text-main)' }}><ArrowLeft /></Link>
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Checkout</h1>
             </div>
 
-            {/* Cart Summary */}
             <section className="flex-col gap-4 mb-6">
                 <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ITEM SUMMARY</h2>
                 <div className="flex-col gap-4 p-4" style={{ background: 'white', borderRadius: '0', border: '2px solid var(--border)' }}>
@@ -200,7 +203,6 @@ export default function Checkout() {
                 </div>
             </section>
 
-            {/* Order Mode */}
             <section className="flex-col gap-4 mb-6">
                 <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ORDER TYPE</h2>
                 <div className="flex-col gap-3">
@@ -240,7 +242,6 @@ export default function Checkout() {
                 )}
             </section>
 
-            {/* Dynamic Details Form */}
             <section className="flex-col gap-4 mb-6 p-4" style={{ background: 'white', borderRadius: '0', border: '2px solid var(--border)' }}>
                 {mode === 'Dine-in' && (
                     <div className="flex-col gap-2">
@@ -299,11 +300,9 @@ export default function Checkout() {
                 </div>
             </section>
 
-            {/* Payment */}
             <section className="flex-col gap-4 mb-6">
                 <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PAYMENT METHOD</h2>
                 <div className="flex-col gap-3">
-                    {/* Cash Payment */}
                     <div
                         onClick={() => setPaymentMethod('cash')}
                         className="flex-center p-4 gap-3"
@@ -325,7 +324,6 @@ export default function Checkout() {
                         )}
                     </div>
 
-                    {/* UPI Payment (QR) */}
                     <div
                         onClick={() => setPaymentMethod('upi')}
                         className="flex-center p-4 gap-3"
@@ -349,7 +347,6 @@ export default function Checkout() {
                 </div>
             </section>
 
-            {/* Bottom Action */}
             <button
                 onClick={handlePlaceOrder}
                 disabled={loading}
@@ -376,7 +373,6 @@ export default function Checkout() {
                 {loading ? 'Processing...' : (paymentMethod === 'upi' ? `Pay Now • ₹${cart.total}` : `Place Order • ₹${cart.total}`)}
             </button>
 
-            {/* Scan & Pay Modal */}
             {showQrModal && (
                 <div className="fixed top-0 left-0 w-full h-full flex-center p-4 fade-in" style={{ position: 'fixed', zIndex: 100, background: 'rgba(0,0,0,0.8)' }}>
                     <div className="flex-col p-6 w-full max-w-sm" style={{ background: 'white', borderRadius: '20px', textAlign: 'center' }}>
