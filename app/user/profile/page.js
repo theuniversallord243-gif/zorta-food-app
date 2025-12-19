@@ -14,14 +14,12 @@ export default function UserProfile() {
     const [showImageMenu, setShowImageMenu] = useState(false);
 
     useEffect(() => {
-        // Check auth
         const token = localStorage.getItem('user_token');
         if (!token) {
             router.push('/user/login');
             return;
         }
 
-        // Load user data from localStorage
         const userId = localStorage.getItem('user_id');
         const userName = localStorage.getItem('user_name');
         const userEmail = localStorage.getItem('user_email');
@@ -32,16 +30,13 @@ export default function UserProfile() {
             email: userEmail
         });
 
-        // Load user image from localStorage
         const savedImage = localStorage.getItem('user_image');
         if (savedImage) setUserImage(savedImage);
 
-        // Fetch user's orders
         const fetchOrders = async () => {
             try {
                 const res = await fetch('/api/orders');
                 const allOrders = await res.json();
-                // Filter orders by user email (simple approach)
                 const userOrders = allOrders.filter(o => o.userEmail === userEmail || o.details?.email === userEmail);
                 setOrders(userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
             } catch (err) {
@@ -58,6 +53,7 @@ export default function UserProfile() {
         localStorage.removeItem('user_name');
         localStorage.removeItem('user_email');
         localStorage.removeItem('user_cart');
+        localStorage.removeItem('user_image');
         router.push('/user/login');
     };
 
@@ -77,10 +73,9 @@ export default function UserProfile() {
                                 let width = img.width;
                                 let height = img.height;
 
-                                // Max width 500px for profile pic
-                                if (width > 500) {
-                                    height = (height * 500) / width;
-                                    width = 500;
+                                if (width > 300) {
+                                    height = (height * 300) / width;
+                                    width = 300;
                                 }
 
                                 canvas.width = width;
@@ -96,8 +91,6 @@ export default function UserProfile() {
                                                 resolve(blobReader.result);
                                             };
                                             blobReader.onerror = () => {
-                                                console.error('Blob read error');
-                                                // Fallback to original if compression fails
                                                 resolve(event.target.result);
                                             };
                                             blobReader.readAsDataURL(blob);
@@ -107,7 +100,7 @@ export default function UserProfile() {
                                         }
                                     },
                                     'image/jpeg',
-                                    0.7
+                                    0.5
                                 );
                             } catch (err) {
                                 console.error('Canvas error:', err);
@@ -116,7 +109,6 @@ export default function UserProfile() {
                         };
                         
                         img.onerror = () => {
-                            console.error('Image load error');
                             reject(new Error('Failed to load image'));
                         };
                     } catch (err) {
@@ -126,7 +118,6 @@ export default function UserProfile() {
                 };
 
                 reader.onerror = () => {
-                    console.error('FileReader error:', reader.error);
                     reject(new Error('Failed to read file'));
                 };
 
@@ -142,30 +133,28 @@ export default function UserProfile() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // File type validation
         if (!file.type.startsWith('image/')) {
             setUploadStatus('Please select an image file.');
             setTimeout(() => setUploadStatus(''), 3000);
             return;
         }
 
-        // File size validation (max 3MB)
-        if (file.size > 3 * 1024 * 1024) {
-            setUploadStatus('File too large! Max 3MB allowed.');
+        if (file.size > 2 * 1024 * 1024) {
+            setUploadStatus('File too large! Max 2MB allowed.');
             setTimeout(() => setUploadStatus(''), 3000);
             return;
         }
 
-        setUploadStatus('Compressing image...');
+        setUploadStatus('Uploading...');
         try {
             const compressedImage = await compressImage(file);
             setUserImage(compressedImage);
             localStorage.setItem('user_image', compressedImage);
-            setUploadStatus('✓ Profile picture updated!');
+            setUploadStatus('✓ Picture updated!');
             setTimeout(() => setUploadStatus(''), 2000);
         } catch (err) {
             console.error('Image compression failed:', err);
-            setUploadStatus('❌ Failed to upload image. Please try again with a smaller image.');
+            setUploadStatus('❌ Upload failed. Try a smaller image.');
             setTimeout(() => setUploadStatus(''), 4000);
         }
     };
@@ -174,7 +163,7 @@ export default function UserProfile() {
         setUserImage(null);
         localStorage.removeItem('user_image');
         setShowImageMenu(false);
-        setUploadStatus('Profile picture removed.');
+        setUploadStatus('Picture removed.');
         setTimeout(() => setUploadStatus(''), 2000);
     };
 
@@ -183,14 +172,12 @@ export default function UserProfile() {
     return (
         <main className="container flex-col" style={{ paddingBottom: '80px' }}>
 
-            {/* Header */}
             <div className="flex-center p-4" style={{ justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
                 <Link href="/user"><ArrowLeft size={24} /></Link>
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 700 }}>My Account</h1>
                 <div style={{ width: '24px' }}></div>
             </div>
 
-            {/* Profile Section */}
             <div className="p-6 flex-col flex-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', color: 'white', textAlign: 'center' }}>
                 <div style={{ position: 'relative', marginBottom: '1rem' }}>
                     {userImage ? (
@@ -206,7 +193,6 @@ export default function UserProfile() {
                         <Upload size={18} color="white" />
                     </button>
 
-                    {/* Image Menu Popup */}
                     {showImageMenu && (
                         <div style={{ 
                             position: 'absolute', 
@@ -274,7 +260,6 @@ export default function UserProfile() {
                 )}
             </div>
 
-            {/* Tabs */}
             <div className="flex-center gap-4 p-4" style={{ borderBottom: '1px solid var(--border)', justifyContent: 'flex-start', overflowX: 'auto' }}>
                 <button
                     onClick={() => setActiveTab('profile')}
@@ -310,10 +295,8 @@ export default function UserProfile() {
                 </button>
             </div>
 
-            {/* Profile Tab */}
             {activeTab === 'profile' && (
                 <div className="flex-col gap-6 p-6">
-                    {/* User Info Card */}
                     <div className="flex-col p-6" style={{ background: 'white', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.5rem' }}>Personal Information</h3>
 
@@ -340,7 +323,6 @@ export default function UserProfile() {
                         </div>
                     </div>
 
-                    {/* Logout Button */}
                     <button
                         onClick={handleLogout}
                         style={{
@@ -364,7 +346,6 @@ export default function UserProfile() {
                 </div>
             )}
 
-            {/* Orders Tab */}
             {activeTab === 'orders' && (
                 <div className="flex-col gap-4 p-6">
                     {orders.length === 0 ? (

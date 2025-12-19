@@ -1,26 +1,22 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { Clock, CheckCircle, ChefHat, XCircle, CreditCard, Banknote } from 'lucide-react';
-// In real app, use useOrders hook backed by SWR/React Query
 
 export default function OrdersTab({ outletId }) {
     const [orders, setOrders] = useState([]);
-
+    const [loadingOrderId, setLoadingOrderId] = useState(null);
     const prevOrdersRef = useRef([]);
 
-    // Poll for new orders every 5 seconds
     useEffect(() => {
         const fetchOrders = async () => {
             try {
                 const res = await fetch('/api/orders');
                 const allOrders = await res.json();
 
-                // Filter for this outlet and sort by new first
                 const outletOrders = allOrders
                     .filter(o => o.outletId === outletId)
                     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-                // Check for new orders to play sound
                 if (prevOrdersRef.current.length > 0 && outletOrders.length > prevOrdersRef.current.length) {
                     const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3');
                     audio.play().catch(e => console.error("Audio play failed", e));
@@ -34,12 +30,13 @@ export default function OrdersTab({ outletId }) {
             }
         };
 
-        fetchOrders(); // Initial
-        const interval = setInterval(fetchOrders, 5000); // Check every 5s
+        fetchOrders();
+        const interval = setInterval(fetchOrders, 5000);
         return () => clearInterval(interval);
     }, [outletId]);
 
     const updateStatus = async (orderId, newStatus) => {
+        setLoadingOrderId(orderId);
         try {
             const res = await fetch('/api/orders', {
                 method: 'PUT',
@@ -48,16 +45,21 @@ export default function OrdersTab({ outletId }) {
             });
 
             if (res.ok) {
-                // Update local state immediately for smooth UX
                 const updated = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
                 setOrders(updated);
+            } else {
+                alert('Failed to update order status');
             }
         } catch (err) {
             console.error('Failed to update order', err);
+            alert('Error updating order');
+        } finally {
+            setLoadingOrderId(null);
         }
     };
 
     const updatePaymentStatus = async (orderId, newPaymentStatus) => {
+        setLoadingOrderId(orderId);
         try {
             const res = await fetch('/api/orders', {
                 method: 'PUT',
@@ -66,30 +68,34 @@ export default function OrdersTab({ outletId }) {
             });
 
             if (res.ok) {
-                // Update local state immediately for smooth UX
                 const updated = orders.map(o => o.id === orderId ? { ...o, paymentStatus: newPaymentStatus } : o);
                 setOrders(updated);
+            } else {
+                alert('Failed to update payment status');
             }
         } catch (err) {
             console.error('Failed to update payment status', err);
+            alert('Error updating payment');
+        } finally {
+            setLoadingOrderId(null);
         }
     };
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'New': return '#3b82f6'; // Blue
-            case 'Processing': return '#eab308'; // Yellow
-            case 'Ready': return '#10b981'; // Green
-            case 'Completed': return '#64748b'; // Gray
+            case 'New': return '#3b82f6';
+            case 'Processing': return '#eab308';
+            case 'Ready': return '#10b981';
+            case 'Completed': return '#64748b';
             default: return '#cbd5e1';
         }
     };
 
     const getPaymentStatusColor = (paymentStatus) => {
         switch (paymentStatus) {
-            case 'completed': return '#10b981'; // Green
-            case 'pending': return '#ef4444'; // Red
-            case 'failed': return '#dc2626'; // Dark Red
+            case 'completed': return '#10b981';
+            case 'pending': return '#ef4444';
+            case 'failed': return '#dc2626';
             default: return '#cbd5e1';
         }
     };
@@ -124,13 +130,11 @@ export default function OrdersTab({ outletId }) {
                     {orders.map(order => (
                         <div key={order.id} className="flex-col p-4" style={{ background: 'white', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-md)', borderLeft: `4px solid ${getStatusColor(order.status)}` }}>
 
-                            {/* Header */}
                             <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                 <span style={{ fontWeight: 700, fontSize: '1rem' }}>#{order.id?.slice(-4) || '....'}</span>
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
 
-                            {/* Items */}
                             <div className="flex-col gap-1 mb-3" style={{ fontSize: '0.9rem' }}>
                                 {order.items.map((item, idx) => (
                                     <div key={idx} className="flex-center" style={{ justifyContent: 'space-between' }}>
@@ -144,7 +148,6 @@ export default function OrdersTab({ outletId }) {
                                 </div>
                             </div>
 
-                            {/* Customer Details */}
                             <div className="flex-col gap-2 mb-3 p-3" style={{ background: '#f8fafc', borderRadius: '8px', fontSize: '0.85rem' }}>
                                 <div className="flex-center gap-2" style={{ justifyContent: 'flex-start' }}>
                                     <span style={{ fontWeight: 600, color: 'var(--primary)' }}>📍 {order.mode || 'Dine-in'}</span>
@@ -175,7 +178,6 @@ export default function OrdersTab({ outletId }) {
                                 )}
                             </div>
 
-                            {/* Payment Status Section */}
                             <div className="flex-col gap-2 mb-3 p-3" style={{ background: order.paymentStatus === 'completed' ? '#ecfdf5' : '#fef2f2', borderRadius: '0', fontSize: '0.85rem' }}>
                                 <div className="flex-center gap-2" style={{ justifyContent: 'space-between' }}>
                                     <div className="flex-center gap-2" style={{ justifyContent: 'flex-start' }}>
@@ -200,6 +202,7 @@ export default function OrdersTab({ outletId }) {
                                 {order.paymentMethod === 'cash' && order.paymentStatus === 'pending' && (
                                     <button
                                         onClick={() => updatePaymentStatus(order.id, 'completed')}
+                                        disabled={loadingOrderId === order.id}
                                         style={{
                                             marginTop: '8px',
                                             padding: '8px 12px',
@@ -207,19 +210,19 @@ export default function OrdersTab({ outletId }) {
                                             color: 'white',
                                             border: 'none',
                                             borderRadius: '0',
-                                            cursor: 'pointer',
+                                            cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer',
                                             fontWeight: 600,
                                             fontSize: '0.85rem',
                                             textTransform: 'uppercase',
-                                            letterSpacing: '0.5px'
+                                            letterSpacing: '0.5px',
+                                            opacity: loadingOrderId === order.id ? 0.6 : 1
                                         }}
                                     >
-                                        ✓ Mark Cash Received
+                                        {loadingOrderId === order.id ? '⏳ Processing...' : '✓ Mark Cash Received'}
                                     </button>
                                 )}
                             </div>
 
-                            {/* Status Bar / Actions */}
                             <div className="flex-col gap-2">
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: getStatusColor(order.status), textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     Status: {order.status}
@@ -227,13 +230,31 @@ export default function OrdersTab({ outletId }) {
 
                                 <div className="flex-center gap-2">
                                     {order.status === 'New' && (
-                                        <button onClick={() => updateStatus(order.id, 'Processing')} className="w-full p-2" style={{ background: '#eab308', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Accept & Cook</button>
+                                        <button 
+                                            onClick={() => updateStatus(order.id, 'Processing')} 
+                                            disabled={loadingOrderId === order.id}
+                                            className="w-full p-2" 
+                                            style={{ background: '#eab308', color: 'white', border: 'none', borderRadius: '8px', cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingOrderId === order.id ? 0.6 : 1 }}>
+                                            {loadingOrderId === order.id ? '⏳ Processing...' : 'Accept & Cook'}
+                                        </button>
                                     )}
                                     {order.status === 'Processing' && (
-                                        <button onClick={() => updateStatus(order.id, 'Ready')} className="w-full p-2" style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Mark Ready</button>
+                                        <button 
+                                            onClick={() => updateStatus(order.id, 'Ready')} 
+                                            disabled={loadingOrderId === order.id}
+                                            className="w-full p-2" 
+                                            style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingOrderId === order.id ? 0.6 : 1 }}>
+                                            {loadingOrderId === order.id ? '⏳ Processing...' : 'Mark Ready'}
+                                        </button>
                                     )}
                                     {order.status === 'Ready' && (
-                                        <button onClick={() => updateStatus(order.id, 'Completed')} className="w-full p-2" style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Complete Order</button>
+                                        <button 
+                                            onClick={() => updateStatus(order.id, 'Completed')} 
+                                            disabled={loadingOrderId === order.id}
+                                            className="w-full p-2" 
+                                            style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingOrderId === order.id ? 0.6 : 1 }}>
+                                            {loadingOrderId === order.id ? '⏳ Processing...' : 'Complete Order'}
+                                        </button>
                                     )}
                                 </div>
                             </div>
