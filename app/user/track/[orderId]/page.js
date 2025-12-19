@@ -8,23 +8,34 @@ export default function OrderTracking() {
     const params = useParams();
     const orderId = params?.orderId;
     const [order, setOrder] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        // Poll for status updates
         const fetchOrder = async () => {
             try {
                 const res = await fetch(`/api/orders?id=${orderId}`);
                 const data = await res.json();
-                if (data && data.id) setOrder(data);
-            } catch (e) { console.error("Poll error", e); }
+                if (data && data.id) {
+                    setOrder(data);
+                } else {
+                    setOrder(null);
+                }
+            } catch (e) { 
+                console.error("Fetch error", e);
+                setOrder(null);
+            } finally {
+                setLoading(false);
+            }
         };
 
-        fetchOrder();
-        const interval = setInterval(fetchOrder, 2000); // Check every 2s
-        return () => clearInterval(interval);
+        if (orderId) {
+            fetchOrder();
+            const interval = setInterval(fetchOrder, 3000);
+            return () => clearInterval(interval);
+        }
     }, [orderId]);
 
     const handleReportSubmit = async () => {
@@ -65,7 +76,33 @@ export default function OrderTracking() {
         }
     };
 
-    if (!order) return <div className="p-6 flex-center">Loading Status...</div>;
+    if (loading) {
+        return (
+            <main className="container flex-col fade-in" style={{ paddingBottom: '40px', minHeight: '100vh', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>Loading your order...</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Please wait</p>
+                </div>
+            </main>
+        );
+    }
+
+    if (!order) {
+        return (
+            <main className="container flex-col fade-in" style={{ paddingBottom: '40px', minHeight: '100vh', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>Order not found</p>
+                    <Link href="/user">
+                        <button style={{ marginTop: '1rem', padding: '10px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                            Go to Home
+                        </button>
+                    </Link>
+                </div>
+            </main>
+        );
+    }
 
     const steps = [
         { status: 'New', label: 'Order Placed', icon: Clock },
@@ -74,7 +111,6 @@ export default function OrderTracking() {
         { status: 'Completed', label: 'Delivered', icon: ShoppingBag },
     ];
 
-    // Helper to find current step index
     const getCurrentStep = () => {
         const statusMap = { 'New': 0, 'Processing': 1, 'Ready': 2, 'Completed': 3 };
         return statusMap[order.status] || 0;
@@ -85,14 +121,12 @@ export default function OrderTracking() {
     return (
         <main className="container flex-col fade-in" style={{ paddingBottom: '40px' }}>
 
-            {/* Top Bar */}
             <div className="flex-center p-4" style={{ justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
                 <Link href="/user"><ArrowLeft /></Link>
                 <h1 style={{ fontSize: '1rem', fontWeight: 700 }}>Track Order</h1>
                 <div style={{ width: '24px' }}></div>
             </div>
 
-            {/* Banner */}
             <div className="p-6 text-center" style={{ background: order.status === 'Cancelled' ? '#fee2e2' : '#f0fdf4', borderBottom: '1px solid ' + (order.status === 'Cancelled' ? '#fecaca' : '#dcfce7') }}>
                 <h2 style={{ color: order.status === 'Cancelled' ? '#dc2626' : '#166534', fontWeight: 800, fontSize: '1.5rem', marginBottom: '4px' }}>
                     {order.status === 'Cancelled' ? 'Order Cancelled' : order.status === 'Completed' ? 'Order Completed!' : order.status === 'Ready' ? 'Food is Ready!' : `Estimated: 15 mins`}
@@ -105,7 +139,6 @@ export default function OrderTracking() {
                 )}
             </div>
 
-            {/* Show cancelled message or timeline */}
             {order.status === 'Cancelled' ? (
                 <div className="m-4 p-6" style={{ background: '#fef2f2', borderRadius: '16px', border: '2px solid #fecaca', textAlign: 'center' }}>
                     <h3 style={{ color: '#dc2626', fontWeight: 700, fontSize: '1.2rem', marginBottom: '8px' }}>Order Cancelled</h3>
@@ -168,7 +201,6 @@ export default function OrderTracking() {
             </div>
             )}
 
-            {/* Order Details Summary */}
             <div className="m-4 p-4" style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid var(--border)' }}>
                 <h3 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Order Details</h3>
                 <div className="flex-col gap-2">
@@ -201,7 +233,6 @@ export default function OrderTracking() {
                 )}
             </div>
 
-            {/* Report Modal */}
             {showReportModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
