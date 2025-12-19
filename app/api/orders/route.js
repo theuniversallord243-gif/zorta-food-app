@@ -15,21 +15,24 @@ export async function GET(request) {
 
         if (id) {
             const order = await Order.findById(id);
-            return NextResponse.json(order || {});
+            if (order) {
+                return NextResponse.json({ id: order._id, ...order.toObject() });
+            }
+            return NextResponse.json({});
         }
 
         if (userId) {
             const orders = await Order.find({ userId });
-            return NextResponse.json(orders);
+            return NextResponse.json(orders.map(o => ({ id: o._id, ...o.toObject() })));
         }
 
         if (outletId) {
             const orders = await Order.find({ outletId });
-            return NextResponse.json(orders);
+            return NextResponse.json(orders.map(o => ({ id: o._id, ...o.toObject() })));
         }
 
         const orders = await Order.find();
-        return NextResponse.json(orders);
+        return NextResponse.json(orders.map(o => ({ id: o._id, ...o.toObject() })));
     } catch (error) {
         console.error('Order fetch error:', error);
         return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
@@ -95,7 +98,7 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
         }
 
-        return NextResponse.json(order);
+        return NextResponse.json({ id: order._id, ...order.toObject() });
     } catch (error) {
         console.error('Order update error:', error);
         return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
