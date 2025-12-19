@@ -29,6 +29,16 @@ export async function POST(request) {
             { upsert: true }
         );
 
+        // Check if email is configured
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+            console.log('[DEV MODE] OTP:', otp);
+            return NextResponse.json({ 
+                success: true, 
+                message: 'OTP generated (email not configured)', 
+                otp: otp // Only for development
+            });
+        }
+
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
