@@ -141,7 +141,7 @@ export default function Checkout() {
             outletId: cart.outletId,
             paymentMethod: paymentMethod,
             paymentId: paymentId || null,
-            paymentStatus: paymentMethod === 'upi' ? 'paid' : 'pending'
+            paymentStatus: paymentMethod === 'cash' ? 'pending' : 'paid'
         };
 
         try {
@@ -168,7 +168,7 @@ export default function Checkout() {
 
             localStorage.removeItem('user_cart');
             const orderId = newOrder.id || newOrder._id;
-            router.push(`/user/track/${orderId}`);
+            setTimeout(() => router.push(`/user/track/${orderId}`), 500);
         } catch (err) {
             console.error("Order error:", err);
             alert("Failed to place order. Please try again.");

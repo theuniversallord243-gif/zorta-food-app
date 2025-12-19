@@ -211,8 +211,14 @@ export default function OrderTracking() {
                         </div>
                     ))}
                     <div style={{ borderTop: '1px solid var(--border)', marginTop: '8px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                        <span>Total Paid</span>
-                        <span>₹{order.total}</span>
+                        <span>Total Amount</span>
+                        <span>₹{order.totalAmount || order.total}</span>
+                    </div>
+                    <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                        <span>Payment Status</span>
+                        <span style={{ fontWeight: 600, color: order.paymentStatus === 'paid' ? '#16a34a' : '#f59e0b' }}>
+                            {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Pending'}
+                        </span>
                     </div>
                 </div>
             </div>
