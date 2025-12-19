@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, KeyRound, X } from 'lucide-react';
+import { ArrowLeft, Mail, KeyRound, X, Lock, CheckCircle } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 
 export default function UserLogin() {
@@ -14,6 +14,7 @@ export default function UserLogin() {
     const [forgotPasswordStep, setForgotPasswordStep] = useState(1);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotOTP, setForgotOTP] = useState('');
+    const [generatedOTP, setGeneratedOTP] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [forgotError, setForgotError] = useState('');
     const [forgotLoading, setForgotLoading] = useState(false);
@@ -58,46 +59,28 @@ export default function UserLogin() {
             const data = await res.json();
 
             if (!res.ok) {
-                setForgotError(data.error || 'Failed to send OTP');
+                setForgotError(data.error || 'Failed to generate OTP');
                 setForgotLoading(false);
                 return;
             }
 
+            setGeneratedOTP(data.otp);
+            alert(`Your OTP is: ${data.otp}`);
             setForgotPasswordStep(2);
         } catch (err) {
-            setForgotError('Error sending OTP. Please try again.');
+            setForgotError('Error generating OTP. Please try again.');
             console.error(err);
         } finally {
             setForgotLoading(false);
         }
     };
 
-    const handleForgotPasswordStep2 = async (e) => {
+    const handleForgotPasswordStep2 = (e) => {
         e.preventDefault();
-        setForgotLoading(true);
-        setForgotError('');
-
-        try {
-            const res = await fetch('/api/auth/verify-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: forgotEmail, otp: forgotOTP })
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                setForgotError(data.error || 'Invalid OTP');
-                setForgotLoading(false);
-                return;
-            }
-
+        if (forgotOTP === generatedOTP.toString()) {
             setForgotPasswordStep(3);
-        } catch (err) {
-            setForgotError('Error verifying OTP. Please try again.');
-            console.error(err);
-        } finally {
-            setForgotLoading(false);
+        } else {
+            setForgotError('Invalid OTP');
         }
     };
 
@@ -133,6 +116,7 @@ export default function UserLogin() {
             setForgotEmail('');
             setForgotOTP('');
             setNewPassword('');
+            setGeneratedOTP('');
             setError('Password reset successful! Please login with your new password.');
         } catch (err) {
             setForgotError('Error resetting password. Please try again.');
@@ -148,6 +132,7 @@ export default function UserLogin() {
         setForgotEmail('');
         setForgotOTP('');
         setNewPassword('');
+        setGeneratedOTP('');
         setForgotError('');
     };
 
@@ -265,101 +250,117 @@ export default function UserLogin() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.5)',
+                    background: 'rgba(0, 0, 0, 0.6)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 1000
+                    zIndex: 1000,
+                    animation: 'fadeIn 0.3s ease'
                 }}>
                     <div style={{
                         background: 'white',
-                        borderRadius: 'var(--radius)',
-                        padding: '2rem',
+                        borderRadius: '20px',
+                        padding: '2.5rem',
                         width: '90%',
-                        maxWidth: '400px',
-                        boxShadow: 'var(--shadow-lg)'
+                        maxWidth: '420px',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                        animation: 'slideUp 0.3s ease'
                     }}>
-                        <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Reset Password</h2>
+                        <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ background: 'var(--primary)', color: 'white', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Lock size={20} />
+                                </div>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Reset Password</h2>
+                            </div>
                             <button
                                 type="button"
                                 onClick={closeForgotPasswordModal}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                                style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
+                        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem' }}>
+                            {[1, 2, 3].map(i => (
+                                <div key={i} style={{ flex: 1, height: '4px', background: forgotPasswordStep >= i ? 'var(--primary)' : '#e2e8f0', borderRadius: '2px', transition: 'all 0.3s ease' }}></div>
+                            ))}
+                        </div>
+
                         {forgotPasswordStep === 1 && (
                             <form onSubmit={handleForgotPasswordStep1} className="flex-col gap-4">
+                                <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Enter your email to receive an OTP</p>
                                 <div className="flex-col gap-2">
-                                    <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Email Address</label>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>Email Address</label>
                                     <input
                                         type="email"
                                         required
                                         className="p-3"
-                                        style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '0.875rem' }}
+                                        style={{ border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', transition: 'all 0.2s' }}
                                         placeholder="your@email.com"
                                         value={forgotEmail}
                                         onChange={e => setForgotEmail(e.target.value.trim())}
+                                        onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+                                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                                     />
                                 </div>
-                                {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{forgotError}</p>}
+                                {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px' }}>{forgotError}</p>}
                                 <button
                                     type="submit"
                                     disabled={forgotLoading}
                                     style={{
-                                        padding: '0.75rem',
+                                        padding: '0.875rem',
                                         background: 'var(--primary)',
                                         color: 'white',
                                         border: 'none',
-                                        borderRadius: 'var(--radius)',
-                                        fontSize: '0.875rem',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem',
                                         fontWeight: 600,
                                         cursor: forgotLoading ? 'not-allowed' : 'pointer',
-                                        opacity: forgotLoading ? 0.7 : 1
+                                        opacity: forgotLoading ? 0.7 : 1,
+                                        transition: 'all 0.2s'
                                     }}
                                 >
-                                    {forgotLoading ? 'Sending OTP...' : 'Send OTP'}
+                                    {forgotLoading ? 'Generating OTP...' : 'Send OTP'}
                                 </button>
                             </form>
                         )}
 
                         {forgotPasswordStep === 2 && (
                             <form onSubmit={handleForgotPasswordStep2} className="flex-col gap-4">
-                                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                                    We've sent an OTP to <strong>{forgotEmail}</strong>
-                                </p>
+                                <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>We've sent an OTP to <strong style={{ color: 'var(--text-main)' }}>{forgotEmail}</strong></p>
                                 <div className="flex-col gap-2">
-                                    <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Enter OTP</label>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>Enter OTP</label>
                                     <input
                                         type="text"
                                         required
                                         className="p-3"
-                                        style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '1rem', letterSpacing: '4px', textAlign: 'center' }}
+                                        style={{ border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '1.2rem', letterSpacing: '8px', textAlign: 'center', fontWeight: 600, transition: 'all 0.2s' }}
                                         placeholder="000000"
                                         maxLength="6"
                                         value={forgotOTP}
                                         onChange={e => setForgotOTP(e.target.value)}
+                                        onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+                                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                                     />
                                 </div>
-                                {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{forgotError}</p>}
+                                {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px' }}>{forgotError}</p>}
                                 <button
                                     type="submit"
-                                    disabled={forgotLoading}
                                     style={{
-                                        padding: '0.75rem',
+                                        padding: '0.875rem',
                                         background: 'var(--primary)',
                                         color: 'white',
                                         border: 'none',
-                                        borderRadius: 'var(--radius)',
-                                        fontSize: '0.875rem',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem',
                                         fontWeight: 600,
-                                        cursor: forgotLoading ? 'not-allowed' : 'pointer',
-                                        opacity: forgotLoading ? 0.7 : 1
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
                                     }}
                                 >
-                                    {forgotLoading ? 'Verifying...' : 'Verify OTP'}
+                                    Verify OTP
                                 </button>
                                 <button
                                     type="button"
@@ -373,35 +374,36 @@ export default function UserLogin() {
 
                         {forgotPasswordStep === 3 && (
                             <form onSubmit={handleForgotPasswordStep3} className="flex-col gap-4">
-                                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                                    Enter your new password for <strong>{forgotEmail}</strong>
-                                </p>
+                                <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Create a new password for <strong style={{ color: 'var(--text-main)' }}>{forgotEmail}</strong></p>
                                 <div className="flex-col gap-2">
-                                    <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>New Password</label>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>New Password</label>
                                     <input
                                         type="password"
                                         required
                                         className="p-3"
-                                        style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '0.875rem' }}
+                                        style={{ border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', transition: 'all 0.2s' }}
                                         placeholder="••••••••"
                                         value={newPassword}
                                         onChange={e => setNewPassword(e.target.value)}
+                                        onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+                                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                                     />
                                 </div>
-                                {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{forgotError}</p>}
+                                {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px' }}>{forgotError}</p>}
                                 <button
                                     type="submit"
                                     disabled={forgotLoading}
                                     style={{
-                                        padding: '0.75rem',
+                                        padding: '0.875rem',
                                         background: 'var(--primary)',
                                         color: 'white',
                                         border: 'none',
-                                        borderRadius: 'var(--radius)',
-                                        fontSize: '0.875rem',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem',
                                         fontWeight: 600,
                                         cursor: forgotLoading ? 'not-allowed' : 'pointer',
-                                        opacity: forgotLoading ? 0.7 : 1
+                                        opacity: forgotLoading ? 0.7 : 1,
+                                        transition: 'all 0.2s'
                                     }}
                                 >
                                     {forgotLoading ? 'Resetting...' : 'Reset Password'}
