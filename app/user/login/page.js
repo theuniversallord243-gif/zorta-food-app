@@ -65,7 +65,7 @@ export default function UserLogin() {
             }
 
             setGeneratedOTP(data.otp);
-            alert(`Your OTP is: ${data.otp}`);
+            alert(`OTP sent to ${forgotEmail}. Check your email!`);
             setForgotPasswordStep(2);
         } catch (err) {
             setForgotError('Error generating OTP. Please try again.');
@@ -96,8 +96,8 @@ export default function UserLogin() {
                 return;
             }
 
-            const res = await fetch('/api/users', {
-                method: 'PUT',
+            const res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: forgotEmail,

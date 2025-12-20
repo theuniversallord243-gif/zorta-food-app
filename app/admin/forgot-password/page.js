@@ -37,7 +37,7 @@ export default function ForgotPassword() {
 
             if (otpData.success) {
                 setGeneratedOtp(otpData.otp);
-                alert(`Your OTP is: ${otpData.otp}`);
+                alert(`OTP sent to ${email}. Check your email!`);
                 setStep(2);
             } else {
                 alert("Failed to generate OTP.");
@@ -65,8 +65,8 @@ export default function ForgotPassword() {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/outlets', {
-                method: 'PUT',
+            const res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password: newPassword })
             });

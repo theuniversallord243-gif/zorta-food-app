@@ -431,6 +431,7 @@ export default function SettingsTab({ outletId }) {
                                 value={outletData.upiId || ''}
                                 onChange={e => setOutletData({ ...outletData, upiId: e.target.value })}
                             />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>This will be shown to customers as backup payment option</span>
                         </div>
                     </div>
                 </section>

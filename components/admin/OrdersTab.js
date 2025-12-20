@@ -44,15 +44,18 @@ export default function OrdersTab({ outletId }) {
                 body: JSON.stringify({ id: orderId, status: newStatus })
             });
 
+            const data = await res.json();
+            
             if (res.ok) {
                 const updated = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
                 setOrders(updated);
             } else {
-                alert('Failed to update order status');
+                console.error('Update error:', data);
+                alert(`Failed to update: ${data.error || 'Unknown error'}`);
             }
         } catch (err) {
             console.error('Failed to update order', err);
-            alert('Error updating order');
+            alert('Error updating order: ' + err.message);
         } finally {
             setLoadingOrderId(null);
         }
@@ -67,15 +70,18 @@ export default function OrdersTab({ outletId }) {
                 body: JSON.stringify({ id: orderId, paymentStatus: newPaymentStatus })
             });
 
+            const data = await res.json();
+            
             if (res.ok) {
                 const updated = orders.map(o => o.id === orderId ? { ...o, paymentStatus: newPaymentStatus } : o);
                 setOrders(updated);
             } else {
-                alert('Failed to update payment status');
+                console.error('Payment update error:', data);
+                alert(`Failed to update: ${data.error || 'Unknown error'}`);
             }
         } catch (err) {
             console.error('Failed to update payment status', err);
-            alert('Error updating payment');
+            alert('Error updating payment: ' + err.message);
         } finally {
             setLoadingOrderId(null);
         }
@@ -83,10 +89,11 @@ export default function OrdersTab({ outletId }) {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'New': return '#3b82f6';
+            case 'Pending': return '#3b82f6';
             case 'Processing': return '#eab308';
             case 'Ready': return '#10b981';
             case 'Completed': return '#64748b';
+            case 'Cancelled': return '#ef4444';
             default: return '#cbd5e1';
         }
     };
@@ -127,11 +134,18 @@ export default function OrdersTab({ outletId }) {
                 </div>
             ) : (
                 <div className="flex-col gap-4">
-                    {orders.map(order => (
+                    {orders.map(order => {
+                        console.log('Order:', order);
+                        return (
                         <div key={order.id} className="flex-col p-4" style={{ background: 'white', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-md)', borderLeft: `4px solid ${getStatusColor(order.status)}` }}>
 
                             <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ fontWeight: 700, fontSize: '1rem' }}>#{order.id?.slice(-4) || '....'}</span>
+                                <div className="flex-col">
+                                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>#{order.id?.slice(-4) || '....'}</span>
+                                {order.customerName && (
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>👤 {order.customerName}</span>
+                                )}
+                                </div>
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
 
@@ -187,7 +201,7 @@ export default function OrdersTab({ outletId }) {
                                             <Banknote size={18} style={{ color: getPaymentStatusColor(order.paymentStatus) }} />
                                         )}
                                         <span style={{ fontWeight: 700, textTransform: 'capitalize' }}>
-                                            {order.paymentMethod === 'online' ? '💳 Online' : '💰 Cash'}
+                                            {order.paymentMethod === 'upi' ? '💳 Online' : '💰 Cash'}
                                         </span>
                                     </div>
                                     <span style={{ fontWeight: 700, color: getPaymentStatusColor(order.paymentStatus), textTransform: 'uppercase', fontSize: '0.75rem' }}>
@@ -199,7 +213,7 @@ export default function OrdersTab({ outletId }) {
                                         Transaction ID: {order.paymentId.slice(-8)}
                                     </div>
                                 )}
-                                {order.paymentMethod === 'cash' && order.paymentStatus === 'pending' && (
+                                {(order.paymentMethod === 'cash' || !order.paymentMethod) && order.paymentStatus === 'pending' && order.status !== 'Cancelled' && (
                                     <button
                                         onClick={() => updatePaymentStatus(order.id, 'completed')}
                                         disabled={loadingOrderId === order.id}
@@ -215,7 +229,8 @@ export default function OrdersTab({ outletId }) {
                                             fontSize: '0.85rem',
                                             textTransform: 'uppercase',
                                             letterSpacing: '0.5px',
-                                            opacity: loadingOrderId === order.id ? 0.6 : 1
+                                            opacity: loadingOrderId === order.id ? 0.6 : 1,
+                                            width: '100%'
                                         }}
                                     >
                                         {loadingOrderId === order.id ? '⏳ Processing...' : '✓ Mark Cash Received'}
@@ -228,8 +243,8 @@ export default function OrdersTab({ outletId }) {
                                     Status: {order.status}
                                 </div>
 
-                                <div className="flex-center gap-2">
-                                    {order.status === 'New' && (
+                                <div className="flex-col gap-2">
+                                    {order.status === 'Pending' && (
                                         <button 
                                             onClick={() => updateStatus(order.id, 'Processing')} 
                                             disabled={loadingOrderId === order.id}
@@ -247,20 +262,30 @@ export default function OrdersTab({ outletId }) {
                                             {loadingOrderId === order.id ? '⏳ Processing...' : 'Mark Ready'}
                                         </button>
                                     )}
-                                    {order.status === 'Ready' && (
+                                    {order.status === 'Pending' && (
                                         <button 
-                                            onClick={() => updateStatus(order.id, 'Completed')} 
+                                            onClick={() => updateStatus(order.id, 'Cancelled')} 
                                             disabled={loadingOrderId === order.id}
                                             className="w-full p-2" 
-                                            style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingOrderId === order.id ? 0.6 : 1 }}>
-                                            {loadingOrderId === order.id ? '⏳ Processing...' : 'Complete Order'}
+                                            style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingOrderId === order.id ? 0.6 : 1, marginTop: '8px' }}>
+                                            {loadingOrderId === order.id ? '⏳ Processing...' : '✗ Cancel Order'}
+                                        </button>
+                                    )}
+                                    {order.status === 'Processing' && (
+                                        <button 
+                                            onClick={() => updateStatus(order.id, 'Cancelled')} 
+                                            disabled={loadingOrderId === order.id}
+                                            className="w-full p-2" 
+                                            style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: loadingOrderId === order.id ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingOrderId === order.id ? 0.6 : 1, marginTop: '8px' }}>
+                                            {loadingOrderId === order.id ? '⏳ Processing...' : '✗ Cancel Order'}
                                         </button>
                                     )}
                                 </div>
                             </div>
 
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 

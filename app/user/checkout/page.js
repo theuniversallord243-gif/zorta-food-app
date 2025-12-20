@@ -15,6 +15,7 @@ export default function Checkout() {
     const [showQrModal, setShowQrModal] = useState(false);
 
     const [details, setDetails] = useState({
+        customerName: '',
         tableNo: '',
         address: '',
         phone: '',
@@ -113,6 +114,11 @@ export default function Checkout() {
     };
 
     const handlePlaceOrder = async () => {
+        if (!details.customerName?.trim()) {
+            alert("Please enter your name");
+            return;
+        }
+
         if (mode === 'Delivery' && !details.address?.trim()) {
             alert("Please enter your Delivery Address");
             return;
@@ -243,6 +249,16 @@ export default function Checkout() {
             </section>
 
             <section className="flex-col gap-4 mb-6 p-4" style={{ background: 'white', borderRadius: '0', border: '2px solid var(--border)' }}>
+                <div className="flex-col gap-2">
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Name</label>
+                    <input
+                        placeholder="Enter your name"
+                        className="p-3 w-full"
+                        style={{ border: '2px solid var(--border)', borderRadius: '0', fontSize: '0.95rem', fontWeight: 500 }}
+                        value={details.customerName}
+                        onChange={e => setDetails({ ...details, customerName: e.target.value })}
+                    />
+                </div>
                 {mode === 'Dine-in' && (
                     <div className="flex-col gap-2">
                         <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Table Number (Optional)</label>

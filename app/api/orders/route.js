@@ -49,15 +49,22 @@ export async function POST(request) {
         }
 
         const newOrder = new Order({
+            customerName: body.details?.customerName || '',
             userId: body.userId || null,
             outletId: body.outletId,
             items: body.items,
+            total: body.total,
             totalAmount: body.total || body.totalAmount,
+            mode: body.mode || 'Dine-in',
+            details: body.details || {},
+            paymentMethod: body.paymentMethod || 'cash',
             deliveryAddress: body.details?.address || body.deliveryAddress || '',
             status: 'Pending',
-            paymentStatus: body.paymentStatus || 'Pending',
+            paymentStatus: body.paymentStatus || 'pending',
             statusHistory: [{ status: 'Pending', timestamp: new Date() }]
         });
+
+        console.log('Creating order with:', { paymentMethod: body.paymentMethod, paymentStatus: body.paymentStatus });
 
         await newOrder.save();
         return NextResponse.json({ id: newOrder._id, ...newOrder.toObject() }, { status: 201 });
@@ -77,10 +84,10 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
         }
 
-        const validStatuses = ['Pending', 'Confirmed', 'Preparing', 'Ready', 'Delivered', 'Cancelled'];
+        const validStatuses = ['Pending', 'Processing', 'Ready', 'Completed', 'Cancelled'];
         
         if (status && !validStatuses.includes(status)) {
-            return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+            return NextResponse.json({ error: `Invalid status. Valid: ${validStatuses.join(', ')}` }, { status: 400 });
         }
 
         const updateData = { updatedAt: new Date() };
