@@ -14,7 +14,6 @@ export default function UserLogin() {
     const [forgotPasswordStep, setForgotPasswordStep] = useState(1);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotOTP, setForgotOTP] = useState('');
-    const [generatedOTP, setGeneratedOTP] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [forgotError, setForgotError] = useState('');
     const [forgotLoading, setForgotLoading] = useState(false);
@@ -64,7 +63,6 @@ export default function UserLogin() {
                 return;
             }
 
-            setGeneratedOTP(data.otp);
             alert(`OTP sent to ${forgotEmail}. Check your email!`);
             setForgotPasswordStep(2);
         } catch (err) {
@@ -75,12 +73,31 @@ export default function UserLogin() {
         }
     };
 
-    const handleForgotPasswordStep2 = (e) => {
+    const handleForgotPasswordStep2 = async (e) => {
         e.preventDefault();
-        if (forgotOTP === generatedOTP.toString()) {
+        setForgotLoading(true);
+        setForgotError('');
+
+        try {
+            const res = await fetch('/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail, otp: forgotOTP })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                setForgotError(data.error || 'Invalid OTP');
+                setForgotLoading(false);
+                return;
+            }
+
             setForgotPasswordStep(3);
-        } else {
-            setForgotError('Invalid OTP');
+        } catch (err) {
+            setForgotError('Error verifying OTP. Please try again.');
+            console.error(err);
+        } finally {
+            setForgotLoading(false);
         }
     };
 
@@ -101,12 +118,15 @@ export default function UserLogin() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: forgotEmail,
-                    password: newPassword
+                    otp: forgotOTP,
+                    password: newPassword,
+                    type: 'user'
                 })
             });
 
             if (!res.ok) {
-                setForgotError('Failed to reset password. Try again.');
+                const data = await res.json();
+                setForgotError(data.error || 'Failed to reset password. Try again.');
                 setForgotLoading(false);
                 return;
             }
@@ -116,7 +136,6 @@ export default function UserLogin() {
             setForgotEmail('');
             setForgotOTP('');
             setNewPassword('');
-            setGeneratedOTP('');
             setError('Password reset successful! Please login with your new password.');
         } catch (err) {
             setForgotError('Error resetting password. Please try again.');
@@ -132,7 +151,6 @@ export default function UserLogin() {
         setForgotEmail('');
         setForgotOTP('');
         setNewPassword('');
-        setGeneratedOTP('');
         setForgotError('');
     };
 
@@ -348,6 +366,7 @@ export default function UserLogin() {
                                 {forgotError && <p style={{ color: '#ef4444', fontSize: '0.875rem', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px' }}>{forgotError}</p>}
                                 <button
                                     type="submit"
+                                    disabled={forgotLoading}
                                     style={{
                                         padding: '0.875rem',
                                         background: 'var(--primary)',
@@ -356,11 +375,12 @@ export default function UserLogin() {
                                         borderRadius: '10px',
                                         fontSize: '0.95rem',
                                         fontWeight: 600,
-                                        cursor: 'pointer',
+                                        cursor: forgotLoading ? 'not-allowed' : 'pointer',
+                                        opacity: forgotLoading ? 0.7 : 1,
                                         transition: 'all 0.2s'
                                     }}
                                 >
-                                    Verify OTP
+                                    {forgotLoading ? 'Verifying...' : 'Verify OTP'}
                                 </button>
                                 <button
                                     type="button"

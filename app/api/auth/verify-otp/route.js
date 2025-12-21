@@ -3,11 +3,21 @@ import { connectDB } from '@/lib/mongodb';
 import { OTP } from '@/lib/models';
 import { validateInput } from '@/lib/validation';
 import Joi from 'joi';
+import crypto from 'crypto';
 
 const verifySchema = Joi.object({
     email: Joi.string().email().required(),
     otp: Joi.string().length(6).required()
 });
+
+const constantTimeCompare = (a, b) => {
+    const bufferA = Buffer.from(a);
+    const bufferB = Buffer.from(b);
+    if (bufferA.length !== bufferB.length) {
+        return false;
+    }
+    return crypto.timingSafeEqual(bufferA, bufferB);
+};
 
 export async function POST(request) {
     try {
@@ -30,7 +40,11 @@ export async function POST(request) {
             return NextResponse.json({ error: 'OTP expired' }, { status: 400 });
         }
 
-        if (otpRecord.otp !== body.otp) {
+        try {
+            if (!constantTimeCompare(otpRecord.otp, body.otp)) {
+                return NextResponse.json({ error: 'Invalid OTP' }, { status: 400 });
+            }
+        } catch (err) {
             return NextResponse.json({ error: 'Invalid OTP' }, { status: 400 });
         }
 
