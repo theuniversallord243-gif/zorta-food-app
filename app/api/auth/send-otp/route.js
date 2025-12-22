@@ -57,11 +57,12 @@ export async function POST(request) {
                 html: `<h2>Password Reset OTP</h2><p>Your OTP code is: <strong>${otp}</strong></p><p>Valid for ${process.env.OTP_EXPIRY_MINUTES || 10} minutes</p>`
             });
         } catch (emailError) {
-            console.error('Email sending failed for:', body.email);
+            console.error('Email sending failed:', emailError);
+            return NextResponse.json({ error: 'Failed to send OTP email. Please check server logs or contact support.' }, { status: 500 });
         }
-        
-        return NextResponse.json({ 
-            success: true, 
+
+        return NextResponse.json({
+            success: true,
             message: 'OTP sent to your email'
         });
     } catch (error) {
